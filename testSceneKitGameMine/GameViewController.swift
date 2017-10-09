@@ -88,7 +88,9 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         let constraint = SCNLookAtConstraint(target: scnBallNode)
         constraint.isGimbalLockEnabled = true // target устанавливается по центру?
         scnCameraNode.constraints = [constraint]
-                
+        
+        scnCameraNode.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(node: scnCameraNode, options: nil))
+        scnCameraNode.physicsBody?.isAffectedByGravity = false
         scnScene.rootNode.addChildNode(scnCameraNode)
         
     }
@@ -99,7 +101,7 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         let textGeometry = SCNText(string: "Score: \(score)", extrusionDepth: 0.1)
         textGeometry.font = UIFont(name: "Arial", size: 0.7)
         let textMaterial = SCNMaterial()
-        textMaterial.diffuse.contents = UIColor.init(colorLiteralRed: 0.899, green: 0.588, blue: 0.183, alpha: 1)
+        textMaterial.diffuse.contents = UIColor(displayP3Red: 0.899, green: 0.588, blue: 0.183, alpha: 1)
         textGeometry.materials = [textMaterial]
         scoreNodeLabel.geometry = textGeometry
         scoreNodeLabel.position = SCNVector3(0, 3, 0)
@@ -111,7 +113,7 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         let highScoreGeometry = SCNText(string: "High score: \(highScore)", extrusionDepth: 0.1)
         highScoreGeometry.font = UIFont(name: "Arial", size: 0.7)
         let highScoreMaterial = SCNMaterial()
-        highScoreMaterial.diffuse.contents = UIColor.init(colorLiteralRed: 0.899, green: 0.588, blue: 0.183, alpha: 1)
+        highScoreMaterial.diffuse.contents = UIColor(displayP3Red: 0.899, green: 0.588, blue: 0.183, alpha: 1)
         highScoreGeometry.materials = [highScoreMaterial]
         highScoreNodeLabel.geometry = highScoreGeometry
         highScoreNodeLabel.position = SCNVector3(0, -4, 3)
@@ -135,7 +137,7 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         let boxNode = SCNNode()
         let boxGeometry = SCNBox(width: 1, height: 1, length: 1, chamferRadius: 0)
         let boxMaterial = SCNMaterial()
-        boxMaterial.diffuse.contents = UIColor.init(colorLiteralRed: 0.95, green: 0.75, blue: 0.3, alpha: 1)
+        boxMaterial.diffuse.contents = UIColor(displayP3Red: 0.95, green: 0.75, blue: 0.3, alpha: 1)
         boxGeometry.materials = [boxMaterial]
         
         boxNode.geometry = boxGeometry
@@ -210,7 +212,7 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         scnBallNode = SCNNode()
         let ballGeometry = SCNSphere(radius: 0.2)
         let ballMaterial = SCNMaterial()
-        ballMaterial.diffuse.contents = UIColor.init(colorLiteralRed: 1, green: 0, blue: 0, alpha: 1)
+        ballMaterial.diffuse.contents = UIColor(displayP3Red: 1, green: 0, blue: 0, alpha: 1)
         ballGeometry.materials = [ballMaterial]
         
         scnBallNode.geometry = ballGeometry
@@ -234,9 +236,19 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
             self?.scnScene.rootNode.enumerateChildNodes({ (node, stop) in
                 node.removeFromParentNode()
             })
+            print("SCNScene root nodes count: \(String(describing: self?.scnScene.rootNode.childNodes.count))")
         }
         
          let createScene = SCNAction.run { [weak self] (node) in
+            self?.scnView = nil
+            self?.scnBallNode.geometry = nil
+            self?.scnBallNode.physicsBody = nil
+            self?.scnBallNode = nil
+            
+            
+            self?.scoreNodeLabel = nil
+            self?.highScoreNodeLabel = nil
+
             self?.setupView()
             self?.setupScene()
             self?.createFirstBox()
@@ -251,6 +263,7 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         
         let sequance = SCNAction.sequence([wait, removeBall, createScene])
         scnBallNode.runAction(sequance)
+//         print("Bloah!")
     }
     
     //MARK: Fade
@@ -290,6 +303,8 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         let wait = SCNAction.wait(duration: 1)
         let remove = SCNAction.run { (node) in
             node.removeFromParentNode()
+            node.geometry = nil
+            node.physicsBody = nil
         }
         let sequance = SCNAction.sequence([wait, remove])
         coin.runAction(sequance)
@@ -342,12 +357,13 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
             highScoreNodeLabel.runAction(SCNAction.repeatForever(SCNAction.move(by: SCNVector3(0,0,-50), duration: 20)))
             left = false
         }
-        scnCameraNode.position = SCNVector3(scnBallNode.position.x + 20, scnCameraNode.position.y, scnBallNode.position.z + 20)
+//        scnCameraNode.position = SCNVector3(scnBallNode.position.x + 20, scnCameraNode.position.y, scnBallNode.position.z + 20)
 
         
     }
     //MARK: - SCNSceneRendererDelegate
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval){
+        scnCameraNode.position = SCNVector3(scnBallNode.position.x + 20, scnCameraNode.position.y, scnBallNode.position.z + 20)
         let deleteBox = scnScene.rootNode.childNode(withName: String(lastBoxNumber), recursively: true)
         let currentBox = scnScene.rootNode.childNode(withName: String(lastBoxNumber + 1), recursively: true)
         
@@ -363,6 +379,5 @@ class GameViewController: UIViewController, SCNSceneRendererDelegate, SCNPhysics
         }else{
             die()
         }
-        
     }
 }
